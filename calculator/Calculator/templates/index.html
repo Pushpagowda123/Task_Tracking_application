@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basic Calculator </title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .display {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: right;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn.operator {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn.equals {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn.clear {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn.ml {
+            background: #6f42c1;
+            color: white;
+        }
+
+        .ml-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .ml-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .ml-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .ml-input input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .ml-input input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        .ml-btn {
+            background: #6f42c1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .ml-btn:hover {
+            background: #5a32a3;
+        }
+
+        .ml-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .prediction-result {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #155724;
+        }
+
+        .examples-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .examples-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .example-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .example-btn {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .example-btn:hover {
+            background: #138496;
+            transform: translateY(-1px);
+        }
+
+        .history-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .history-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #007bff;
+        }
+
+        .history-expression {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .history-result {
+            color: #28a745;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <div class="header">
+            <h1><b>🤖 AI Calculator</b></h1>
+            
+        </div>
+
+        <div class="display" id="display">0</div>
+
+        <div class="buttons">
+            <button class="btn clear" onclick="clearDisplay()">C</button>
+            <button class="btn" onclick="appendToDisplay('(')">(</button>
+            <button class="btn" onclick="appendToDisplay(')')">)</button>
+            <button class="btn operator" onclick="appendToDisplay('÷')">÷</button>
+            
+            <button class="btn" onclick="appendToDisplay('7')">7</button>
+            <button class="btn" onclick="appendToDisplay('8')">8</button>
+            <button class="btn" onclick="appendToDisplay('9')">9</button>
+            <button class="btn operator" onclick="appendToDisplay('x')">×</button>
+            
+            <button class="btn" onclick="appendToDisplay('4')">4</button>
+            <button class="btn" onclick="appendToDisplay('5')">5</button>
+            <button class="btn" onclick="appendToDisplay('6')">6</button>
+            <button class="btn operator" onclick="appendToDisplay('-')">-</button>
+            
+            <button class="btn" onclick="appendToDisplay('1')">1</button>
+            <button class="btn" onclick="appendToDisplay('2')">2</button>
+            <button class="btn" onclick="appendToDisplay('3')">3</button>
+            <button class="btn operator" onclick="appendToDisplay('+')">+</button>
+            
+            <button class="btn" onclick="appendToDisplay('0')">0</button>
+            <button class="btn" onclick="appendToDisplay('.')">.</button>
+            <button class="btn ml" onclick="showMLSection()">ML</button>
+            <button class="btn equals" onclick="calculate()">=</button>
+        </div>
+
+        <div class="ml-section" id="mlSection" style="display: none;">
+            <h3>🧠 Advanced Sequence Prediction</h3>
+           
+            <div class="ml-input">
+                <input type="number" id="num1" placeholder="Number 1" step="any">
+                <input type="number" id="num2" placeholder="Number 2" step="any">
+                <input type="number" id="num3" placeholder="Number 3" step="any">
+                <input type="number" id="num4" placeholder="Number 4 (optional)" step="any">
+                
+            </div>
+            <div class="ml-buttons">
+                <button class="ml-btn" onclick="predictNext()">Predict</button>
+            </div>
+            
+            <!-- Final prediction result only -->
+            <div id="predictionResult" class="prediction-result" style="display: none;"></div>
+            
+            <!-- Example sequences -->
+           
+        </div>
+
+        <div class="history-section">
+            <h3>📚 Calculation History</h3>
+            <div id="historyContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentExpression = '0';
+        let calculationHistory = [];
+        let isResultDisplayed = false; // Track if we're showing a calculation result
+        let mlInputsCleared = false; // Track if ML inputs have been cleared after prediction
+
+        function updateDisplay() {
+            document.getElementById('display').textContent = currentExpression;
+        }
+
+        function appendToDisplay(value) {
+            // If we're showing a result and user enters a number, clear and start fresh
+            if (isResultDisplayed && (value >= '0' && value <= '9')) {
+                currentExpression = value;
+                isResultDisplayed = false;
+            } else if (isResultDisplayed && (value === '+' || value === '-' || value === 'x' || value === '÷')) {
+                // If showing result and user enters an operator, keep the result and add operator
+                currentExpression += value;
+                isResultDisplayed = false;
+            } else if (currentExpression === '0' && value !== '.') {
+                currentExpression = value;
+            } else {
+                currentExpression += value;
+            }
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            currentExpression = '0';
+            isResultDisplayed = false;
+            updateDisplay();
+        }
+
+        function calculate() {
+            try {
+                const response = fetch('/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ expression: currentExpression })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                    } else {
+                        // Add to history
+                        calculationHistory.unshift({
+                            expression: currentExpression,
+                            result: data.result
+                        });
+                        
+                        // Keep only last 10 calculations
+                        if (calculationHistory.length > 10) {
+                            calculationHistory = calculationHistory.slice(0, 10);
+                        }
+                        
+                        currentExpression = data.result.toString();
+                        isResultDisplayed = true; // Mark that we're showing a result
+                        updateDisplay();
+                        updateHistory();
+                    }
+                });
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        function showMLSection() {
+            const mlSection = document.getElementById('mlSection');
+            const calculatorDisplay = document.getElementById('display');
+            const calculatorButtons = document.querySelector('.buttons');
+            const isHidden = mlSection.style.display === 'none';
+            
+            if (isHidden) {
+                // Opening ML section - ensure calculator is visible and show ML
+                mlSection.style.display = 'block';
+                calculatorDisplay.style.display = 'flex';
+                calculatorButtons.style.display = 'grid';
+                clearMLInputs();
+                clearMLResults();
+            } else {
+                // Closing ML section
+                mlSection.style.display = 'none';
+            }
+        }
+
+        function predictNext() {
+            const numbers = [];
+            for (let i = 1; i <= 4; i++) {
+                const value = document.getElementById(`num${i}`).value;
+                if (value !== '') {
+                    numbers.push(parseFloat(value));
+                }
+            }
+
+            if (numbers.length < 3) {
+                alert('Please enter at least 3 numbers');
+                return;
+            }
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ numbers: numbers })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError('Error: ' + data.error);
+                } else {
+                    showPredictionResults(data, numbers);
+                }
+                // Clear inputs after prediction
+                setTimeout(() => {
+                    clearMLInputs();
+                    mlInputsCleared = true; // Mark that inputs have been cleared
+                }, 2000); // Clear after 2 seconds
+            });
+        }
+
+        function showPredictionResults(data, numbers) {
+            // Show final prediction
+            const resultDiv = document.getElementById('predictionResult');
+            resultDiv.textContent = `🎯 Final Prediction: ${data.prediction}`;
+            resultDiv.style.display = 'block';
+
+            // Show pattern analysis
+            const patternDiv = document.getElementById('patternAnalysis');
+            if (data.pattern_analysis && Object.keys(data.pattern_analysis).length > 0) {
+                let patternText = `🔍 Pattern Detected: ${data.pattern_analysis.type}`;
+                if (data.pattern_analysis.difference) {
+                    patternText += ` (difference: ${data.pattern_analysis.difference})`;
+                } else if (data.pattern_analysis.ratio) {
+                    patternText += ` (ratio: ${data.pattern_analysis.ratio})`;
+                }
+                patternDiv.textContent = patternText;
+                patternDiv.style.display = 'block';
+            } else {
+                patternDiv.style.display = 'none';
+            }
+
+            // Show ML prediction
+            const mlDiv = document.getElementById('mlPrediction');
+            mlDiv.textContent = `🤖 ML Model Prediction: ${data.ml_prediction}`;
+            mlDiv.style.display = 'block';
+
+            // Input fields are already cleared in predictNext function
+        }
+
+        function showError(message) {
+            const resultDiv = document.getElementById('predictionResult');
+            resultDiv.textContent = message;
+            resultDiv.style.background = '#f8d7da';
+            resultDiv.style.borderColor = '#f5c6cb';
+            resultDiv.style.color = '#721c24';
+            resultDiv.style.display = 'block';
+            
+            // Hide other result divs
+            document.getElementById('patternAnalysis').style.display = 'none';
+            document.getElementById('mlPrediction').style.display = 'none';
+        }
+
+        function loadExample(numbers) {
+            // Clear previous inputs
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`num${i}`).value = '';
+            }
+            
+            // Load the example numbers
+            for (let i = 0; i < numbers.length; i++) {
+                document.getElementById(`num${i+1}`).value = numbers[i];
+            }
+            
+            // Clear previous results
+            document.getElementById('predictionResult').style.display = 'none';
+            document.getElementById('patternAnalysis').style.display = 'none';
+            document.getElementById('mlPrediction').style.display = 'none';
+        }
+
+        function clearMLInputs() {
+            // Clear all ML input fields
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`num${i}`).value = '';
+            }
+            mlInputsCleared = false; // Reset the flag when manually clearing
+        }
+
+        function clearMLResults() {
+            // Clear all ML result displays
+            document.getElementById('predictionResult').style.display = 'none';
+            document.getElementById('patternAnalysis').style.display = 'none';
+            document.getElementById('mlPrediction').style.display = 'none';
+        }
+
+        function updateHistory() {
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = '';
+            
+            calculationHistory.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <div class="history-expression">${item.expression}</div>
+                    <div class="history-result">= ${item.result}</div>
+                `;
+                container.appendChild(historyItem);
+            });
+        }
+
+        // Load initial history
+        fetch('/history')
+            .then(response => response.json())
+            .then(data => {
+                calculationHistory = data.history;
+                updateHistory();
+            });
+
+        // Add event listeners to ML input fields for smart clearing
+        document.addEventListener('DOMContentLoaded', function() {
+            for (let i = 1; i <= 4; i++) {
+                const input = document.getElementById(`num${i}`);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        // If inputs were cleared after prediction and user starts typing, clear all inputs first
+                        if (mlInputsCleared && this.value !== '') {
+                            clearMLInputs();
+                            this.value = this.value; // Set the current input value
+                            mlInputsCleared = false; // Reset the flag
+                        }
+                    });
+                }
+            }
+        });
+
+        // Keyboard support - only for calculator, not ML inputs
+        document.addEventListener('keydown', function(event) {
+            // Check if user is typing in ML input fields
+            const activeElement = document.activeElement;
+            const isMLInput = activeElement && (
+                activeElement.id === 'num1' || 
+                activeElement.id === 'num2' || 
+                activeElement.id === 'num3' || 
+                activeElement.id === 'num4'
+            );
+            
+            // Only handle keyboard events if not in ML input fields
+            if (!isMLInput) {
+                const key = event.key;
+                if (key >= '0' && key <= '9' || key === '.') {
+                    appendToDisplay(key);
+                } else if (key === '+' || key === '-') {
+                    appendToDisplay(key);
+                } else if (key === '*') {
+                    appendToDisplay('x');
+                } else if (key === '/') {
+                    appendToDisplay('÷');
+                } else if (key === 'Enter' || key === '=') {
+                    calculate();
+                } else if (key === 'Escape') {
+                    clearDisplay();
+                } else if (key === 'Backspace') {
+                    if (currentExpression.length > 1) {
+                        currentExpression = currentExpression.slice(0, -1);
+                        updateDisplay();
+                    } else {
+                        clearDisplay();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
