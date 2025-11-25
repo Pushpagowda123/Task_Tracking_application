@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <header>
+      <div class="header-content">
+        <h1>Task Tracking Application</h1>
+        <p>Manage users, assign work, and visualize derived state.</p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section>
+        <h2>Create User</h2>
+        <form id="user-form">
+          <label>
+            Name
+            <input type="text" name="name" placeholder="Jane Doe" required />
+          </label>
+          <label>
+            Role
+            <input type="text" name="role" placeholder="Product Manager" />
+          </label>
+          <button type="submit">Add User</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Add Task</h2>
+        <form id="task-form">
+          <label>
+            Title
+            <input type="text" name="title" placeholder="Plan sprint" required />
+          </label>
+          <label>
+            Description
+            <textarea name="description" placeholder="Outline backlog and milestones"></textarea>
+          </label>
+          <div class="form-row">
+            <label>
+              Priority
+              <select name="priority">
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
+            <label>
+              Status
+              <select name="status">
+                <option value="todo">To-do</option>
+                <option value="in-progress">In Progress</option>
+                <option value="done">Done</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Assignee
+              <select name="assigneeId" id="assignee-select">
+                <option value="">assigned< to me/option>
+                <option value="">All</option>
+                <option value="">Completed</option>
+              </select>
+            </label>
+            <label>
+              Due date
+              <input type="date" name="dueDate" />
+            </label>
+          </div>
+          <button type="submit">Add Task</button>
+        </form>
+      </section>
+
+      <section class="wide">
+        <div class="task-header">
+          <div>
+            <h2>Task List</h2>
+            <p>Filter: All / Assigned to me / Completed (done)</p>
+          </div>
+          <div class="current-user-select">
+            <label>
+              I am
+              <select id="current-user-select">
+                <option value="">Select user</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="filters">
+          <div class="filter-buttons" id="filter-buttons">
+            <button type="button" data-filter="all" class="active">All</button>
+            <button type="button" data-filter="assigned">Assigned to me</button>
+            <button type="button" data-filter="completed">Completed</button>
+          </div>
+          <label>
+            View tasks for user
+            <select id="assignee-filter">
+              <option value="">Show Everyone</option>
+            </select>
+          </label>
+        </div>
+        <div id="dashboard" class="dashboard"></div>
+        <div id="tasks-container"></div>
+      </section>
+    </main>
+
+    <template id="task-template">
+      <article class="task-card">
+        <header>
+          <div>
+            <p class="task-id"></p>
+            <h3></h3>
+          </div>
+          <span class="status-pill"></span>
+        </header>
+        <p class="description"></p>
+        <div class="task-meta-row">
+          <span class="meta assignee"></span>
+          <span class="meta priority"></span>
+          <span class="meta due-date"></span>
+        </div>
+        <div class="task-actions">
+          <label>
+            Update status
+            <select class="status-select">
+              <option value="todo">To-do</option>
+              <option value="in-progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </label>
+          <button type="button" class="delete-btn">Delete Task</button>
+        </div>
+      </article>
+    </template>
+
+    <script>
+      const API_BASE = window.API_BASE || "/api";
+      const USER_BASE = window.USER_BASE || API_BASE;
+      const state = {
+        users: [],
+        tasks: [],
+        currentUserId: "",
+        activeFilter: "all",
+      };
+
+      const selectors = {
+        tasksByAssignee(assigneeId) {
+          if (!assigneeId) return state.tasks;
+          return state.tasks.filter((task) => String(task.assigneeId || "") === String(assigneeId));
+        },
+      };
+
+      async function fetchUsers() {
+        const res = await fetch(`${USER_BASE}/users`);
+        state.users = await res.json();
+        populateAssigneeOptions();
+      }
+
+      async function fetchTasks() {
+        const res = await fetch(`${API_BASE}/tasks`);
+        const data = await res.json();
+        state.tasks = data.map((task) => ({
+          ...task,
+          id: task.id || task._id,
+          assigneeId: task.assigneeId ?? task.assignee_id ?? null,
+          dueDate: task.dueDate ?? task.due_date ?? null,
+        }));
+        renderTasks();
+        renderDashboard();
+      }
+
+      async function init() {
+        await Promise.all([fetchUsers(), fetchTasks()]);
+        document.getElementById("user-form").addEventListener("submit", handleUserSubmit);
+        document.getElementById("task-form").addEventListener("submit", handleTaskSubmit);
+        document.getElementById("assignee-filter").addEventListener("change", renderTasks);
+        document.getElementById("current-user-select").addEventListener("change", (event) => {
+          state.currentUserId = event.target.value;
+          highlightFilterButton();
+          renderTasks();
+        });
+        document.getElementById("filter-buttons").addEventListener("click", handleFilterClick);
+      }
+
+      async function handleUserSubmit(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const payload = Object.fromEntries(formData.entries());
+
+        const res = await fetch(`${USER_BASE}/users`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          event.target.reset();
+          fetchUsers();
+        } else {
+          alert("Unable to create user.");
+        }
+      }
+
+      async function handleTaskSubmit(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const payload = Object.fromEntries(formData.entries());
+        payload.assigneeId = payload.assigneeId || null;
+        payload.dueDate = payload.dueDate || null;
+
+        const res = await fetch(`${API_BASE}/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          event.target.reset();
+          fetchTasks();
+        } else {
+          alert("Unable to create task.");
+        }
+      }
+
+      async function updateTask(taskId, updates) {
+        const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+
+        if (!res.ok) {
+          alert("Update failed.");
+          return;
+        }
+
+        await fetchTasks();
+      }
+
+      async function deleteTask(taskId) {
+        const confirmed = confirm("Delete this task?");
+        if (!confirmed) return;
+
+        const res = await fetch(`${API_BASE}/tasks/${taskId}`, { method: "DELETE" });
+        if (!res.ok) {
+          alert("Delete failed.");
+          return;
+        }
+
+        await fetchTasks();
+      }
+
+      function populateAssigneeOptions() {
+        const selects = [
+          document.getElementById("assignee-select"),
+          document.getElementById("assignee-filter"),
+          document.getElementById("current-user-select"),
+        ];
+        selects.forEach((select) => {
+          const currentValue = select.value;
+          select.innerHTML = "";
+
+          if (select.id === "assignee-select") {
+            select.appendChild(new Option("Unassigned", ""));
+          } else if (select.id === "assignee-filter") {
+            select.appendChild(new Option("Show Everyone", ""));
+          } else {
+            select.appendChild(new Option("Select user", ""));
+          }
+
+          state.users.forEach((user) => {
+            select.appendChild(new Option(user.name, String(user.id)));
+          });
+
+          if ([...select.options].some((opt) => opt.value === currentValue)) {
+            select.value = currentValue;
+          }
+        });
+      }
+
+      function filteredTasks() {
+        const assigneeFilter = document.getElementById("assignee-filter").value || "";
+        let filtered = selectors.tasksByAssignee(assigneeFilter);
+
+        if (state.activeFilter === "assigned" && state.currentUserId) {
+          filtered = filtered.filter(
+            (task) => String(task.assigneeId || "") === String(state.currentUserId)
+          );
+        }
+
+        if (state.activeFilter === "completed") {
+          filtered = filtered.filter((task) => task.status === "done");
+        }
+
+        return filtered;
+      }
+
+      function renderTasks() {
+        const container = document.getElementById("tasks-container");
+        container.innerHTML = "";
+        const filtered = filteredTasks();
+
+        if (!filtered.length) {
+          container.innerHTML = "<p>No tasks yet.</p>";
+          return;
+        }
+
+        filtered.forEach((task) => {
+          const template = document.getElementById("task-template");
+          const node = template.content.cloneNode(true);
+          node.querySelector("h3").textContent = task.title;
+          const shortId = task.id ? String(task.id) : "";
+          node.querySelector(".task-id").textContent = shortId ? `#${shortId.slice(-6)}` : "";
+          node.querySelector(".status-pill").textContent = task.status;
+          node.querySelector(".status-pill").dataset.status = task.status;
+          node.querySelector(".description").textContent = task.description || "No description";
+          const assignee =
+            task.assignee ||
+            state.users.find((user) => String(user.id) === String(task.assigneeId || ""));
+          node.querySelector(".assignee").textContent = assignee ? assignee.name : "Unassigned";
+          node.querySelector(".priority").textContent = `Priority: ${task.priority || "medium"}`;
+          node.querySelector(".due-date").textContent = task.dueDate
+            ? `Due: ${new Date(task.dueDate).toLocaleDateString()}`
+            : "No due date";
+
+          const statusSelect = node.querySelector(".status-select");
+          statusSelect.value = task.status;
+          statusSelect.addEventListener("change", () => updateTask(task.id, { status: statusSelect.value }));
+
+          node.querySelector(".delete-btn").addEventListener("click", () => deleteTask(task.id));
+
+          container.appendChild(node);
+        });
+      }
+
+      function renderDashboard() {
+        const dashboard = document.getElementById("dashboard");
+        const totals = {
+          tasks: state.tasks.length,
+          users: state.users.length,
+        };
+        const byStatus = state.tasks.reduce((acc, task) => {
+          acc[task.status] = (acc[task.status] || 0) + 1;
+          return acc;
+        }, {});
+        const byAssignee = state.tasks.reduce((acc, task) => {
+          const assignee =
+            task.assignee ||
+            state.users.find((user) => String(user.id) === String(task.assigneeId || ""));
+          const key = assignee ? assignee.name : "Unassigned";
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }, {});
+
+        dashboard.innerHTML = `
+          <div>
+            <h4>Total Tasks</h4>
+            <p>${totals.tasks}</p>
+          </div>
+          <div>
+            <h4>Total Users</h4>
+            <p>${totals.users}</p>
+          </div>
+          <div>
+            <h4>By Status</h4>
+            ${Object.entries(byStatus)
+              .map(([status, count]) => `<p>${status}: ${count}</p>`)
+              .join("") || "<p>No data yet</p>"}
+          </div>
+          <div>
+            <h4>Tasks by Assignee</h4>
+            ${Object.entries(byAssignee)
+              .map(([assignee, count]) => `<p>${assignee}: ${count}</p>`)
+              .join("") || "<p>No data yet</p>"}
+          </div>
+        `;
+      }
+
+      function handleFilterClick(event) {
+        if (event.target.tagName !== "BUTTON") return;
+        const filter = event.target.dataset.filter;
+        if (filter === "assigned" && !state.currentUserId) {
+          alert("Select yourself from the dropdown first.");
+          return;
+        }
+        state.activeFilter = filter;
+        highlightFilterButton();
+        renderTasks();
+      }
+
+      function highlightFilterButton() {
+        document.querySelectorAll("#filter-buttons button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.filter === state.activeFilter);
+        });
+      }
+
+      init();
+    </script>
+  </body>
+</html>
+
